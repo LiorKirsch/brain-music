@@ -1,6 +1,6 @@
 function main()
 
-num_blocks = 2;
+num_blocks = 2; % 30 for 40 minutes run;
 soundFiles = {'funky.wav','hit me baby.wav','queen2.wav','take5.wav','haleluia.wav','sandman2.wav','tocata.wav'};
 whiteNoiseFile = {'noise.wav'};
 
@@ -39,7 +39,7 @@ end
 function [longSoundFile, indicator, sound_indicator] = build_long_sound(sounds, soundFiles, white_noise,  sound_length,noise_length, num_blocks)
     num_sounds = length(soundFiles);
     block_length = noise_length + sum(sound_length); 
-    fprintf('creating a playlist with %d blocks (each %g sec, total %g sec)\n',  num_blocks, block_length, block_length*num_blocks);
+    fprintf('creating a playlist with %d blocks (each %g sec, total %g sec (%g min))\n',  num_blocks, block_length, block_length*num_blocks, block_length*num_blocks/60);
     longSoundFile = [];
     indicator = [1];
     sound_indicator = {};
