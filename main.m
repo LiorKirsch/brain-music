@@ -29,7 +29,8 @@ function [sounds, white_noise, sound_length, noise_length, fs] = load_sounds(sou
         [sounds{i},fs(i)] = audioread(filename);
         sound_length(i) = length(sounds{i})/fs(i);
         fprintf('%s length is %g\n', soundFiles{i} , sound_length(i) );
-    %     sounds{i} = sounds{i} / std(sounds{i}); % normalize to unit variance
+%         sounds{i} = sounds{i} / (100*std(sounds{i})); % normalize to unit variance
+%         sound( sounds{i},fs(i) );
     end
     [white_noise,fs] = audioread('mp3 10 sec wav/noise.wav');
     noise_length = length(white_noise)/fs;
