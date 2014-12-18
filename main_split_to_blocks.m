@@ -2,21 +2,27 @@ function main()
 
 num_blocks = 30; % 30 for 40 minutes run;
 soundFiles = {'fix_funky.wav','fix_hit me baby.wav','fix_queen2.wav','fix_take5.wav','fix_haleluia.wav','fix_sandman.wav','fix_tocata.wav'};
-% soundFiles = {'funky.wav','hit me baby.wav','queen2.wav','take5.wav','haleluia.wav','sandman.wav','tocata.wav'};
 whiteNoiseFile = 'fix_noise.wav';
-
+output_folder = 'output';
 %set random seed
 rng('default');
 rng(1);
 
 [sounds, white_noise, sound_length, noise_length, fs] = load_sounds(soundFiles, whiteNoiseFile);
 
-[longSoundFile, indicator, sound_indicator] = build_long_sound(sounds, soundFiles, white_noise,  sound_length,noise_length, num_blocks);
+longSoundFile = cell(num_blocks,1);
+indicator = cell(num_blocks,1);
+sound_indicator = cell(num_blocks,1);
+for i=1:num_blocks
+    current_output_wav = sprintf('%s/block%d.wav',output_folder,i);
+    [longSoundFile{i}, indicator{i}, sound_indicator{i}] = build_long_sound(sounds, soundFiles, white_noise,  sound_length,noise_length, 1);
+    fprintf('==== %s ====\n', current_output_wav);
+    display_playlist(indicator{i}, sound_indicator{i},fs );
+    % sound( longSoundFile{i},fs );
+    audiowrite(current_output_wav,longSoundFile{i},fs);
+end
 
-display_playlist(indicator, sound_indicator,fs );
-% sound( longSoundFile,fs(1) );
-audiowrite('output.wav',longSoundFile,fs(1));
-save('longsound.mat','longSoundFile','indicator','sound_indicator','fs');
+save('longsound_in_blocks.mat','longSoundFile','indicator','sound_indicator','fs');
 end
 
 function [sounds, white_noise, sound_length, noise_length, fs] = load_sounds(soundFiles, whiteNoiseFile)
@@ -30,10 +36,9 @@ function [sounds, white_noise, sound_length, noise_length, fs] = load_sounds(sou
         [sounds{i},fs(i)] = audioread(filename);
         sound_length(i) = length(sounds{i})/fs(i);
         fprintf('%s length is %g\n', soundFiles{i} , sound_length(i) );
-%         sounds{i} = sounds{i} / (100*std(sounds{i})); % normalize to unit variance
-%         sound( sounds{i},fs(i) );
+    %     sounds{i} = sounds{i} / std(sounds{i}); % normalize to unit variance
     end
-    [white_noise,fs] = audioread(fullfile('mp3 10 sec wav', whiteNoiseFile));
+    [white_noise,fs] = audioread(fullfile('mp3 10 sec wav/', whiteNoiseFile));
     noise_length = length(white_noise)/fs;
     fprintf('noise length is %g\n', noise_length );
 end
