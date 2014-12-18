@@ -1,7 +1,7 @@
 function main()
 
 num_blocks = 2; % 30 for 40 minutes run;
-soundFiles = {'funky.wav','hit me baby.wav','queen2.wav','take5.wav','haleluia.wav','sandman2.wav','tocata.wav'};
+soundFiles = {'funky.wav','hit me baby.wav','queen2.wav','take5.wav','haleluia.wav','sandman.wav','tocata.wav'};
 whiteNoiseFile = {'noise.wav'};
 
 %set random seed
