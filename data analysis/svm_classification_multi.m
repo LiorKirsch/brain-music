@@ -1,4 +1,4 @@
-function [weights, aucs, models, uniqueLabels] = svm_classification(X, y, batch_id, conf)
+function [weights, aucs, models, uniqueLabels] = svm_classification_multi(X, y, batch_id, conf)
     [num_samples_source, num_features] = size(X);
     rng(conf.random_seed);
 
@@ -8,17 +8,18 @@ function [weights, aucs, models, uniqueLabels] = svm_classification(X, y, batch_
     [~, y] = ismember(y, uniqueLabels);
     num_labels = length(uniqueLabels);
     
-    weights = cell(num_labels,1) ;
-    aucs = cell(num_labels,1) ;
-    models = cell(num_labels,1) ;
-
-    fprintf('solving optimization...\n');
-    for i = 1:num_labels
-        fprintf('class %s vs all\n ', uniqueLabels{i});
-        this_label_y = -1*ones(size(y));
-        this_label_y( y==i) = 1;
-        [~, weights{i}, aucs{i}, models{i}] = svmClassification(this_label_y, X, batch_id, conf);
-    end
+    [weights, aucs, models] = svmClassification(y, X, batch_id, conf);
+%     weights = cell(num_labels,1) ;
+%     aucs = cell(num_labels,1) ;
+%     models = cell(num_labels,1) ;
+% 
+%     fprintf('solving optimization...\n');
+%     for i = 1:num_labels
+%         fprintf('class %s vs all\n ', uniqueLabels{i});
+%         this_label_y = -1*ones(size(y));
+%         this_label_y( y==i) = 1;
+%         [~, weights{i}, aucs{i}, models{i}] = svmClassification(this_label_y, X, batch_id, conf);
+%     end
 
 %     check_triplets_matrix = [labels_source(triplets_indices(:,1)) , labels_target(triplets_indices(:,2:3))];
 end
@@ -28,7 +29,7 @@ function [hyper_parms, dict] = getHyperparms(conf)
     dict = {'C'};
 end
 
-function [single_run_weights, weights, aucs, models] = svmClassification(y , X,  batch_id, conf)
+function [weights, aucs, models] = svmClassification(y , X,  batch_id, conf)
 
     % normalize the data to have zero mean and unit variance
     X = normalizeZeroMeanUnitVariance(X,  conf);
@@ -40,6 +41,7 @@ function [single_run_weights, weights, aucs, models] = svmClassification(y , X, 
     [num_samples, num_features] = size(X);
     [hyper_parms, hyper_parms_dict] = getHyperparms(conf);
     
+    num_classes = length(unique(y));
     % Split the data into five. 
     % Do cross validation to find the best C, and report the accuracy and AUC.
     
@@ -49,7 +51,7 @@ function [single_run_weights, weights, aucs, models] = svmClassification(y , X, 
     
     best_Cs = nan(K,1);
     aucs = nan(K,1);
-    weights = nan(K, num_features);
+    weights = nan(K, num_classes, num_features);
     models = cell(K, 1);
     for i=1:K
         fprintf('=========== outer fold %d ==========\n', i);
@@ -57,6 +59,7 @@ function [single_run_weights, weights, aucs, models] = svmClassification(y , X, 
         k_fold_source_indices_test = source_indices(partsDivision(:,i),:);
         k_fold_num_sources = size(k_fold_source_indices,1);
   
+        
         if conf.only_one_cross_val
             assert( size(hyper_parms,1) == 1 ,'when running without 2 fold cross val there should only be a single combination of hyperparms');
             best_C = hyper_parms(1,   ismember('C', hyper_parms_dict)  );
@@ -80,13 +83,15 @@ function [single_run_weights, weights, aucs, models] = svmClassification(y , X, 
 
                 for h=1:size(hyper_parms,1)
                    C =  hyper_parms(h,   ismember('C', hyper_parms_dict)  ); 
-                   [decision_values, model] = runSvm(current_X, current_Y, current_X_test, current_Y_test, C, conf);
+                   [decision_values, model, predicted_label,accuracy] = runSvm(current_X, current_Y, current_X_test, current_Y_test, C, conf);
 
-                   auc = scoreAUC(current_Y_test == 1, decision_values);% auc should get a logical vector
-%                    if  strcmp(conf.log_level ,'debug')
-                        fprintf('auc = %g\t\t \n', auc);
-%                    end
-                   validation_auc(h,j) = auc;
+%                    [mean_objective, ~] = classification_objective(decision_values, ones(size(current_Y_test)),current_Y_test);
+                      
+%                    auc = scoreAUC(current_Y_test == 1, decision_values);% auc should get a logical vector
+% %                    if  strcmp(conf.log_level ,'debug')
+%                         fprintf('auc = %g\t\t \n', auc);
+% %                    end
+                   validation_auc(h,j) = accuracy;%auc;
     %                validation_accuracy(h,j) = accuracy;
                 end
 
@@ -105,30 +110,32 @@ function [single_run_weights, weights, aucs, models] = svmClassification(y , X, 
         current_Y_test = y(k_fold_source_indices_test);
         current_X_test = X(k_fold_source_indices_test,:);
                 
-        [decision_values, model] = runSvm(current_X, current_Y, current_X_test, current_Y_test, best_C, conf);
-        
-        auc = scoreAUC(current_Y_test == 1, decision_values);
-        fprintf('auc = %g\t\t \n', auc);
+        [decision_values, model, predicted_label,accuracy] = runSvm(current_X, current_Y, current_X_test, current_Y_test, best_C, conf);
+
+%         [mean_objective, ~] = classification_objective(decision_values, ones(size(current_Y_test)),current_Y_test);
+
+%         auc = scoreAUC(current_Y_test == 1, decision_values);
+%         fprintf('auc = %g\t\t \n', auc);
         
         best_Cs(i) = best_C;
-        aucs(i) = auc;
-        weights(i,:) = model.w;
+        aucs(i) = accuracy;
+        weights(i,:,:) = model.w;
         models{i} = model;
     end
     
     
-    %========= A single run using all the data =======
-    fprintf('======Using all data to generate weights===========\n');
-    
-    current_Y = y;
-    current_X = X;
-    current_X_test = X;
-    current_Y_test = y;
-    [decision_values, model] = runSvm(current_X, current_Y, current_X_test, current_Y_test, mean(best_Cs), conf);
-    
-    auc = scoreAUC(current_Y_test == 1, decision_values);
-    fprintf('auc (using all data for train and test) = %g\t\t \n', auc);
-    
-    single_run_weights = model.w;
+%     %========= A single run using all the data =======
+%     fprintf('======Using all data to generate weights===========\n');
+%     
+%     current_Y = y;
+%     current_X = X;
+%     current_X_test = X;
+%     current_Y_test = y;
+%     [decision_values, model] = runSvm(current_X, current_Y, current_X_test, current_Y_test, mean(best_Cs), conf);
+%     
+%     auc = scoreAUC(current_Y_test == 1, decision_values);
+%     fprintf('auc (using all data for train and test) = %g\t\t \n', auc);
+%     
+%     single_run_weights = model.w;
 
 end

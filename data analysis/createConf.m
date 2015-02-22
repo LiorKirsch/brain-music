@@ -6,6 +6,7 @@ function conf = createConf()
     conf.unit_var = true;
     conf.sparse = false;
     conf.useWeightsToEqualize = true;
+    conf.useProbabilties = false;
     
     conf.only_one_cross_val = false;
 %     conf.C = ([1000])';
