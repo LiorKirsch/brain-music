@@ -2,7 +2,7 @@ addpath('~/Projects/general use functions/')
 
 %load the data
 fprintf('loading the MEG data into memory\n');
-data_folder = '/cortex/users/lior/data/brain_music/';
+data_folder = get_data_folder();
 load( fullfile(data_folder, 'preprocessed_meg_data.mat') );
 %%
 
