@@ -14,4 +14,7 @@ function conf = createConf()
 %     conf.log_level = 'debug';
     conf.log_level = 'clean';
     
+    conf.split_chunks = 10;
+    % conf.split_chunks = 1;
+    conf.use_noise_normalize = true;
 end

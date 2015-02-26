@@ -28,15 +28,15 @@ fprintf('performing classification using svm \n');
 weights = cell(num_channels,1) ;
 aucs = cell(num_channels,1) ;
 models = cell(num_channels,1) ;
+[X,y,original_sound_samples,batch_id] = split_into_n_chunks(X,y,conf.split_chunks,original_sound_samples,batch_id);
 
 for i = 1:num_channels
-    % [X,y] = split_into_n_chunks(X,y,n);
     fprintf('===== channel %d =====\n', i);
     conf.useWeightsToEqualize = false;
-%     [weights{i}, aucs{i}, models{i}, uniqueLabels] = svm_classification_multi(X(:,:,i), y,batch_id, conf);
-    [weights{i}, aucs{i}, models{i}, uniqueLabels] = svm_classification(X(:,:,i), y,batch_id, conf);
+    [weights{i}, aucs{i}, models{i}, uniqueLabels] = svm_classification_multi(X(:,:,i), y,batch_id, conf);
+%     [weights{i}, aucs{i}, models{i}, uniqueLabels] = svm_classification(X(:,:,i), y,batch_id, conf);
 end
-
-save('results/classification_results_auc_white_noise_normalizing','weights', 'aucs', 'models','uniqueLabels','original_sounds','batch_id','y');
+filename = create_results_filename(conf);
+save(filename, 'aucs', 'models','uniqueLabels','original_sounds','batch_id','y');
 
 
